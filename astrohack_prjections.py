@@ -91,5 +91,38 @@ class galaxy_model_3d(object):
 		ax.pcolormesh(X, Y, densities)
 		return ax
 
+def choose_random_projection():
+	xhat = numpy.random.normal(size=3)
+	xhat /= numpy.sqrt(numpy.dot(xhat, xhat))
+	yhat = numpy.random.normal(size=3)
+	yhat -= numpy.dot(xhat, yhat) * yhat
+	yhat /= numpy.sqrt(numpy.dot(yhat, yhat))
+	return xhat, yhat
 
+class astronomical_image(object):
+	
+	def __init__(self):
+		self.data = None
+		self.ivar = None
+		self.shape = None
+	
+	def set_data(self, data):
+		if self.shape is None:
+			self.shape = data.shape
+		else:
+			assert data.shape == self.shape
+		self.data = data
 
+	def set_ivar(self, ivar):
+		if self.shape is None:
+			self.shape = ivar.shape
+		else:
+			assert ivar.shape == self.shape
+		self.ivar = ivar
+	
+	def add_random_noise(self):
+		assert self.ivar is not None
+		sigma = numpy.zeros(self.size)
+		good = (self.ivar > 0.)
+		sigma[good] = 1. / np.sqrt(self.ivar[good])
+		self.data += sigma * np.random.normal(size=self.shape)
