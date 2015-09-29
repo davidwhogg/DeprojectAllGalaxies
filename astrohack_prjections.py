@@ -8,6 +8,76 @@ import scipy.stats
 from scipy.stats import multivariate_normal
 from scipy.linalg import orth
 import matplotlib.pyplot as plt
+from math import pi ,sin, cos
+
+class rotation_3d(object):
+	"""
+	the class allows one to rotate a 3D vector in different directions
+	"""
+	def __init__(self):
+		self.rot_mat_x = numpy.eye(3)
+		self.rot_mat_y = numpy.eye(3)
+		self.rot_mat_z = numpy.eye(3)
+
+	def _calc_rotation_matrix_x(self, theta, units='deg'):
+		assert units=='deg' or units=='rad'
+		assert type(theta) == float
+
+		if units=='deg':
+			theta_rad = theta * pi / 180.0
+		self.rot_mat_x = numpy.array((1, 0, 0, 0, cos(theta_rad), -sin(theta_rad), 0, sin(theta_rad), cos(theta_rad))).reshape((3, 3))
+
+	def _calc_rotation_matrix_y(self, theta, units='deg'):
+		assert units=='deg' or units=='rad'
+		assert type(theta) == float
+		
+		if units=='deg':
+			theta_rad = theta * pi / 180.0
+		self.rot_mat_y = numpy.array((cos(theta_rad), 0, sin(theta_rad), 0, 1, 0, -sin(theta_rad), 0, cos(theta_rad))).reshape((3, 3))
+
+	def _calc_rotation_matrix_z(self, theta, units='deg'):
+		assert units=='deg' or units=='rad'
+		assert type(theta) == float
+		
+		if units=='deg':
+			theta_rad = theta * pi / 180.0
+		self.rot_mat_z = numpy.array((cos(theta_rad), -sin(theta_rad), 0, sin(theta_rad), cos(theta_rad), 0, 0, 0, 1)).reshape((3, 3))
+
+	def _calc_rotation_matrix(self):
+		self.rot_mat = numpy.dot(numpy.dot(self.rot_mat_x, self.rot_mat_y), self.rot_mat_z)
+
+	def return_rotation_matrix(self, theta_x, theta_y, theta_z, units='deg'):
+		"""
+		function rotates a vector in 3D with three given angles
+		"""
+		assert type(theta_x) == float
+		assert type(theta_y) == float
+		assert type(theta_z) == float
+		assert units=='deg' or units=='rad'
+
+		self._calc_rotation_matrix_x(theta_x, units)
+		self._calc_rotation_matrix_y(theta_y, units)
+		self._calc_rotation_matrix_z(theta_z, units)
+		self._calc_rotation_matrix()
+
+		return self.rot_mat
+
+	def rotate_vector(self, theta_x, theta_y, theta_z, vector, units='deg'):
+		"""
+		function rotates a vector in 3D with three given angles
+		"""
+		assert type(theta_x) == float
+		assert type(theta_y) == float
+		assert type(theta_z) == float
+		assert units=='deg' or units=='rad'
+		assert vector.shape == (3, )
+
+		self._calc_rotation_matrix_x(theta_x, units)
+		self._calc_rotation_matrix_y(theta_y, units)
+		self._calc_rotation_matrix_z(theta_z, units)
+		self._calc_rotation_matrix()
+
+		return numpy.dot(vector, self.rot_mat)
 
 class mixture_of_gaussians(object):
 	"""
