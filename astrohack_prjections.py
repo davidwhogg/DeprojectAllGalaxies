@@ -92,6 +92,9 @@ class galaxy_model_3d(object):
 		return ax
 
 def choose_random_projection():
+	"""
+	Generate two orthogonal normal vectors, drawn isotropically from the sphere.
+	"""
 	xhat = numpy.random.normal(size=3)
 	xhat /= numpy.sqrt(numpy.dot(xhat, xhat))
 	yhat = numpy.random.normal(size=3)
@@ -100,13 +103,22 @@ def choose_random_projection():
 	return xhat, yhat
 
 class astronomical_image(object):
+	"""
+	An object class for astronomical images and functions to make and analyze them.
+	"""
 	
 	def __init__(self):
+		"""
+		Trivial.
+		"""
 		self.data = None
 		self.ivar = None
 		self.shape = None
 	
 	def set_data(self, data):
+		"""
+		Set the image pixel data (the image itself).
+		"""
 		if self.shape is None:
 			self.shape = data.shape
 		else:
@@ -114,6 +126,9 @@ class astronomical_image(object):
 		self.data = data
 
 	def set_ivar(self, ivar):
+		"""
+		Set the estimated inverse variance map for the image.
+		"""
 		if self.shape is None:
 			self.shape = ivar.shape
 		else:
@@ -121,8 +136,23 @@ class astronomical_image(object):
 		self.ivar = ivar
 	
 	def add_random_noise(self):
+		"""
+		Add in Gaussian noise with inverse variance set by `self.ivar`.
+		"""
 		assert self.ivar is not None
 		sigma = numpy.zeros(self.size)
 		good = (self.ivar > 0.)
 		sigma[good] = 1. / np.sqrt(self.ivar[good])
 		self.data += sigma * np.random.normal(size=self.shape)
+	
+	def add_background_level(self, bg):
+		"""
+		Add a constant level into the image data.
+		"""
+		self.data += bg
+	
+	def add_galaxy(self, galaxy, xhat, yhat, scale, xshift, yshift):
+		"""
+		Add a projected 3d galaxy into the image.
+		"""
+		pass
