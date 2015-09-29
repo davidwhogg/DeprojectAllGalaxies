@@ -4,6 +4,7 @@ Copyright 2015 Dalya Baron and David W. Hogg.
 """
 
 import numpy
+import numpy as np
 import scipy.stats
 from scipy.stats import multivariate_normal
 from scipy.linalg import orth
@@ -21,7 +22,6 @@ class rotation_3d(object):
 
 	def _calc_rotation_matrix_x(self, theta, units='deg'):
 		assert units=='deg' or units=='rad'
-		assert type(theta) == float
 
 		if units=='deg':
 			theta_rad = theta * pi / 180.0
@@ -29,7 +29,6 @@ class rotation_3d(object):
 
 	def _calc_rotation_matrix_y(self, theta, units='deg'):
 		assert units=='deg' or units=='rad'
-		assert type(theta) == float
 		
 		if units=='deg':
 			theta_rad = theta * pi / 180.0
@@ -37,7 +36,6 @@ class rotation_3d(object):
 
 	def _calc_rotation_matrix_z(self, theta, units='deg'):
 		assert units=='deg' or units=='rad'
-		assert type(theta) == float
 		
 		if units=='deg':
 			theta_rad = theta * pi / 180.0
@@ -50,9 +48,6 @@ class rotation_3d(object):
 		"""
 		function rotates a vector in 3D with three given angles
 		"""
-		assert type(theta_x) == float
-		assert type(theta_y) == float
-		assert type(theta_z) == float
 		assert units=='deg' or units=='rad'
 
 		self._calc_rotation_matrix_x(theta_x, units)
@@ -66,9 +61,6 @@ class rotation_3d(object):
 		"""
 		function rotates a vector in 3D with three given angles
 		"""
-		assert type(theta_x) == float
-		assert type(theta_y) == float
-		assert type(theta_z) == float
 		assert units=='deg' or units=='rad'
 		assert vector.shape == (3, )
 
@@ -90,8 +82,25 @@ class mixture_of_gaussians(object):
 		self.K = 0
 		self.D = D
 
+	def copy(self):
+		"""
+		This code is brittle because we are not using proper setters (or adders) to construct the mixture.
+		"""
+		new = mixture_of_gaussians(self.D)
+		new.alphas = [a for a in self.alphas] # cheating
+		new.mus = [m for m in self.mus]
+		new.fis = [f for f in self.fis]
+		new.K = self.K
+		return new
+
+	def __mul__(self, factor):
+		new = self.copy()
+		for k, alpha in enumerate(self.alphas):
+			new.alphas[k] = alpha * factor
+		return new
+
 	def add_gaussian(self, alpha, mu, fi):
-		assert type(alpha) == float
+
 		assert mu.shape == (self.D,)
 		assert fi.shape == (self.D, self.D)
 
@@ -111,6 +120,9 @@ class mixture_of_gaussians(object):
 			densities += self.alphas[k] * pdf_k
 		return densities
 
+	def get_total_mass(self):
+		return numpy.sum(self.alphas)
+
 
 class galaxy_model_3d(object):
 	"""
@@ -119,8 +131,21 @@ class galaxy_model_3d(object):
 	def __init__(self):
 		self.mixture = mixture_of_gaussians(3)
 
+	def copy(self):
+		new = galaxy_model_3d()
+		new.mixture = self.mixture.copy()
+		return new
+
+	def __mul__(self, factor):
+		new = self.copy()
+		new.mixture *= factor
+		return new # risky!
+
 	def add_gaussian(self, alpha, mu, fi):
 		self.mixture.add_gaussian(alpha, mu, fi)
+
+	def get_total_mass(self):
+		return self.mixture.get_total_mass()
 
 	def project_2d(self, xi_hat, eta_hat):
 		assert xi_hat.shape == (self.mixture.D,)
@@ -138,7 +163,7 @@ class galaxy_model_3d(object):
 		return mixture_2d
 
 	def render_2d_image(self, xi_hat, eta_hat, xs, ys):
-		X, Y = numpy.meshgrid(xs, ys)
+		Y, X = numpy.meshgrid(ys, xs)
 		xs_flatten = X.flatten()
 		ys_flatten = Y.flatten()
 		positions_flatten = numpy.vstack((xs_flatten, ys_flatten)).T
@@ -170,7 +195,7 @@ def choose_random_projection():
 	xhat = numpy.random.normal(size=3)
 	xhat /= numpy.sqrt(numpy.dot(xhat, xhat))
 	yhat = numpy.random.normal(size=3)
-	yhat -= numpy.dot(xhat, yhat) * yhat
+	yhat -= numpy.dot(xhat, yhat) * xhat
 	yhat /= numpy.sqrt(numpy.dot(yhat, yhat))
 	return xhat, yhat
 
@@ -208,7 +233,26 @@ class astronomical_image(object):
 		else:
 			assert ivar.shape == self.shape
 		self.ivar = ivar
+
+	def set_shape(self, shape):
+		assert len(shape) == 2
+		self.shape = shape
+		if self.data is not None and self.data.shape != self.shape:
+			self.data = None
+		if self.ivar is not None and self.ivar.shape != self.shape:
+			self.ivar = None
+		if self.synthetic is not None and self.synthetic.shape != self.shape:
+			self.synthetic = None
 	
+	def get_data(self):
+		return self.data
+
+	def get_synthetic(self):
+		return self.synthetic
+
+	def get_shape(self):
+		return self.shape
+
 	def add_random_noise(self):
 		"""
 		Add in Gaussian noise with inverse variance set by `self.ivar`.
@@ -217,6 +261,8 @@ class astronomical_image(object):
 		sigma = numpy.zeros(self.shape)
 		good = (self.ivar > 0.)
 		sigma[good] = 1. / np.sqrt(self.ivar[good])
+		if self.synthetic is None:
+			self.synthetic = 0.
 		self.synthetic += sigma * np.random.normal(size=self.shape)
 		self.noise_added = True
 	
@@ -224,6 +270,8 @@ class astronomical_image(object):
 		"""
 		Add a constant level into the image data.
 		"""
+		if self.synthetic is None:
+			self.synthetic = 0.
 		self.synthetic += bg
 	
 	def add_galaxy(self, galaxy, xi_hat, eta_hat, scale, xshift, yshift, psf=None):
@@ -237,6 +285,8 @@ class astronomical_image(object):
 		nx, ny = self.shape
 		xs = (numpy.arange(nx) - xshift) * scale # kpc
 		ys = (numpy.arange(ny) - yshift) * scale # kpc
+		if self.synthetic is None:
+			self.synthetic = 0.
 		self.synthetic += galaxy.render_2d_image(xi_hat, eta_hat, xs, ys)
 
 	def ln_likelihood(self):
