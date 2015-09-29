@@ -83,7 +83,6 @@ class mixture_of_gaussians(object):
 	"""
 	the class represents a D dimensional galaxy model which is constructed from Gaussians
 	"""
-
 	def __init__(self, D):
 		self.alphas = []
 		self.mus = []
@@ -113,12 +112,10 @@ class mixture_of_gaussians(object):
 		return densities
 
 
-
 class galaxy_model_3d(object):
 	"""
 	the class represents a 3D dimensional galaxy model which is constructed from Gaussians
 	"""
-
 	def __init__(self):
 		self.mixture = mixture_of_gaussians(3)
 
@@ -187,8 +184,10 @@ class astronomical_image(object):
 		Trivial.
 		"""
 		self.data = None
+		self.synthetic = None
 		self.ivar = None
 		self.shape = None
+		self.noise_added = False
 	
 	def set_data(self, data):
 		"""
@@ -215,19 +214,34 @@ class astronomical_image(object):
 		Add in Gaussian noise with inverse variance set by `self.ivar`.
 		"""
 		assert self.ivar is not None
-		sigma = numpy.zeros(self.size)
+		sigma = numpy.zeros(self.shape)
 		good = (self.ivar > 0.)
 		sigma[good] = 1. / np.sqrt(self.ivar[good])
-		self.data += sigma * np.random.normal(size=self.shape)
+		self.synthetic += sigma * np.random.normal(size=self.shape)
+		self.noise_added = True
 	
 	def add_background_level(self, bg):
 		"""
 		Add a constant level into the image data.
 		"""
-		self.data += bg
+		self.synthetic += bg
 	
-	def add_galaxy(self, galaxy, xhat, yhat, scale, xshift, yshift):
+	def add_galaxy(self, galaxy, xi_hat, eta_hat, scale, xshift, yshift, psf=None):
 		"""
 		Add a projected 3d galaxy into the image.
+
+		- `scale`: kpc per pixel
+		- `xshift`: location of x=0, y=0 within the image in pixel coords
+
 		"""
-		pass
+		nx, ny = self.shape
+		xs = (numpy.arange(nx) - xshift) * scale # kpc
+		ys = (numpy.arange(ny) - yshift) * scale # kpc
+		self.synthetic += galaxy.render_2d_image(xi_hat, eta_hat, xs, ys)
+
+	def ln_likelihood(self):
+		"""
+		Compare synthetic and data images.
+		"""
+		assert not self.noise_added
+		return -0.5 * numpy.sum(self.ivar * (self.data - self.synthetic) ** 2)
