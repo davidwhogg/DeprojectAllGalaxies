@@ -1,3 +1,8 @@
+"""
+This file is part of the DeprojectAllGalaxies project.
+Copyright 2015 Dalya Baron and David W. Hogg.
+"""
+
 import numpy
 import scipy.stats
 from scipy.stats import multivariate_normal
