@@ -82,16 +82,13 @@ class mixture_of_gaussians(object):
 		self.K = 0
 		self.D = D
 
-
 	def copy(self):
 		"""
 		This code is brittle because we are not using proper setters (or adders) to construct the mixture.
 		"""
 		new = mixture_of_gaussians(self.D)
-		new.alphas = [a for a in self.alphas] # cheating
-		new.mus = [m for m in self.mus]
-		new.fis = [f for f in self.fis]
-		new.K = self.K
+		for alpha, mu, fi in zip(self.alphas, self.mus, self.fis):
+			new.add_gaussian(alpha, mu.copy(), fi.copy())
 		return new
 
 	def __mul__(self, factor):
@@ -157,6 +154,15 @@ class galaxy_model_3d(mixture_of_gaussians):
 	"""
 	def __init__(self):
 		super(galaxy_model_3d, self).__init__(3)
+
+	def copy(self):
+		"""
+		This code is brittle because we are not using proper setters (or adders) to construct the mixture.
+		"""
+		new = galaxy_model_3d()
+		for alpha, mu, fi in zip(self.alphas, self.mus, self.fis):
+			new.add_gaussian(alpha, mu.copy(), fi.copy())
+		return new
 
 	def project_2d(self, xi_hat, eta_hat):
 		assert xi_hat.shape == (self.D,)
@@ -238,12 +244,8 @@ class image_and_model(object):
 	def set_shape(self, shape):
 		assert len(shape) == 2
 		self.shape = shape
-		if self.data is not None and self.data.shape != self.shape:
-			self.data = None
-		if self.ivar is not None and self.ivar.shape != self.shape:
-			self.ivar = None
-		if self.synthetic is not None and self.synthetic.shape != self.shape:
-			self.synthetic = 0.
+		self.synthetic = 0.
+		return None
 
 	def set_psf(self, psf):
 		assert type(psf) == mixture_of_gaussians
@@ -278,8 +280,12 @@ class image_and_model(object):
 		return self.data
 
 	def get_synthetic(self):
-		if self.synthetic == 0.:
-			self.construct_synthetic()
+		try:
+			if self.synthetic == 0:
+				self.construct_synthetic()
+		except:
+			pass
+		
 		return self.synthetic
 
 	def get_shape(self):
@@ -308,16 +314,18 @@ class image_and_model(object):
 	def construct_synthetic(self):
 
 		nx, ny = self.shape
-		xs = (numpy.arange(nx) - self.xshift) * self.scale # kpc
-		ys = (numpy.arange(ny) - self.yshift) * self.scale # kpc
+		xs = (numpy.arange(nx) - self.parameters['xshift']) * self.parameters['scale'] # kpc
+		ys = (numpy.arange(ny) - self.parameters['yshift']) * self.parameters['scale'] # kpc
 
 		r = rotation_3d()
-		r_mat = r.return_rotation_matrix(self.alpha, self.beta, self.gamma)
+		r_mat = r.return_rotation_matrix(self.parameters['alpha'], self.parameters['beta'], self.parameters['gamma'])
 		xi_hat = r_mat[0]
 		eta_hat = r_mat[1]
 
-		self._add_to_synthetic(self.bg)
-		self._add_to_synthetic(galaxy.render_2d_image(xi_hat, eta_hat, xs, ys, intensity=self.intensity, psf=self.psf.rescale(scale)))
+		self._add_to_synthetic(self.parameters['bg'])
+		self._add_to_synthetic(self.galaxy.render_2d_image(xi_hat, eta_hat, xs, ys,
+			                   intensity=self.parameters['intensity'],
+			                   psf=self.psf.rescale(self.parameters['scale'])))
 
 	def get_chi_squared(self):
 		return numpy.sum(self.ivar * (self.data - self.get_synthetic()) ** 2)
@@ -330,7 +338,8 @@ class image_and_model(object):
 
 	def __call__(self, parameter_vector):
 		self.set_parameters_from_vector(parameter_vector)
-		return self.chi_squared(pars, galaxy)
+		return self.get_chi_squared()
+
 
 class album_and_model(object):
 	"""
