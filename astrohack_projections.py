@@ -238,6 +238,16 @@ class image_model(object):
 			assert data.shape == self.shape
 		self.data = data
 
+	def set_synthetic(self, synthetic):
+		"""
+		Set the image pixel data (the image itself).
+		"""
+		if self.shape is None:
+			self.shape = synthetic.shape
+		else:
+			assert synthetic.shape == self.shape
+		self.synthetic = synthetic
+
 	def set_ivar(self, ivar):
 		"""
 		Set the estimated inverse variance map for the image.
@@ -269,6 +279,7 @@ class image_model(object):
 
 	def add_random_noise(self):
 		"""
+		DON'T EVER RUN THIS!!
 		Add in Gaussian noise with inverse variance set by `self.ivar`.
 		This makes a *data* image and preserves the noise-free synthetic image.
 		"""
