@@ -82,6 +82,7 @@ class mixture_of_gaussians(object):
 		self.K = 0
 		self.D = D
 
+
 	def copy(self):
 		"""
 		This code is brittle because we are not using proper setters (or adders) to construct the mixture.
@@ -99,6 +100,17 @@ class mixture_of_gaussians(object):
 			new.alphas[k] = alpha * factor
 		return new
 
+	def rescale(self, scale):
+		"""
+		Expand everything by isotropic scale.
+		Hacky and brittle!
+		Returns a copy!
+		"""
+		new = self.copy()
+		new.mus = [scale * mu for mu in self.mus]
+		new.fis = [scale * scale * fi for fi in self.fis]
+		return new
+
 	def add_gaussian(self, alpha, mu, fi):
 
 		assert mu.shape == (self.D,)
@@ -108,6 +120,21 @@ class mixture_of_gaussians(object):
 		self.mus.append(mu)
 		self.fis.append(fi)
 		self.K += 1
+
+	def convolve(self, other):
+		"""
+		Convolve a mixture with another mixture.
+		Might really be *correlate* rather than convolve!
+		Returns a new object; doesn't work in place.
+		"""
+		assert self.D == other.D
+		new = mixture_of_gaussians(self.D)
+		for ks in range(self.K):
+			for ko in range(other.K):
+				new.add_gaussian(self.alphas[ks] * other.alphas[ko],
+								 self.mus[ks] + other.mus[ko],
+								 self.fis[ks] + other.fis[ko])
+		return new
 
 	def render(self, positions):
 		N, D = positions.shape
@@ -162,31 +189,18 @@ class galaxy_model_3d(object):
 			mixture_2d.add_gaussian(self.mixture.alphas[k], m, V)
 		return mixture_2d
 
-	def render_2d_image(self, xi_hat, eta_hat, xs, ys):
+	def render_2d_image(self, xi_hat, eta_hat, xs, ys, intensity=1., psf=None):
 		Y, X = numpy.meshgrid(ys, xs)
 		xs_flatten = X.flatten()
 		ys_flatten = Y.flatten()
 		positions_flatten = numpy.vstack((xs_flatten, ys_flatten)).T
 
-		mixture_2d = self.project_2d(xi_hat, eta_hat)
+		mixture_2d = self.project_2d(xi_hat, eta_hat) * intensity
+		if psf is not None:
+			mixture_2d = mixture_2d.convolve(psf)
 		densities_flatten = mixture_2d.render(positions_flatten)
 		densities = numpy.reshape(densities_flatten, X.shape)
 		return densities
-
-	def plot_3d_image(self, xs, ys, zs):
-		"""
-		function plots the 3d Gassian model
-		"""
-		pass
-
-	def plot_2d_image(self, ax, xi_hat, eta_hat, xs, ys):
-		"""
-		function plots the projected 2D Gaussian model
-		"""
-		densities = self.render_2d_image(xi_hat, eta_hat, xs, ys)
-		X, Y = numpy.meshgrid(xs, ys)
-		ax.pcolormesh(X, Y, densities)
-		return ax
 
 def choose_random_projection():
 	"""
@@ -199,7 +213,7 @@ def choose_random_projection():
 	yhat /= numpy.sqrt(numpy.dot(yhat, yhat))
 	return xhat, yhat
 
-class astronomical_image(object):
+class image_model(object):
 	"""
 	An object class for astronomical images and functions to make and analyze them.
 	"""
@@ -212,7 +226,7 @@ class astronomical_image(object):
 		self.synthetic = None
 		self.ivar = None
 		self.shape = None
-		self.noise_added = False
+		self.psf = None
 	
 	def set_data(self, data):
 		"""
@@ -256,6 +270,7 @@ class astronomical_image(object):
 	def add_random_noise(self):
 		"""
 		Add in Gaussian noise with inverse variance set by `self.ivar`.
+		This makes a *data* image and preserves the noise-free synthetic image.
 		"""
 		assert self.ivar is not None
 		sigma = numpy.zeros(self.shape)
@@ -263,8 +278,7 @@ class astronomical_image(object):
 		sigma[good] = 1. / np.sqrt(self.ivar[good])
 		if self.synthetic is None:
 			self.synthetic = 0.
-		self.synthetic += sigma * np.random.normal(size=self.shape)
-		self.noise_added = True
+		self.set_data(self.synthetic + sigma * np.random.normal(size=self.shape))
 	
 	def add_background_level(self, bg):
 		"""
@@ -273,8 +287,14 @@ class astronomical_image(object):
 		if self.synthetic is None:
 			self.synthetic = 0.
 		self.synthetic += bg
+
+	def set_psf(self, psf):
+		assert type(psf) == mixture_of_gaussians
+		assert psf.D == 2
+
+		self.psf = psf
 	
-	def add_galaxy(self, galaxy, xi_hat, eta_hat, scale, xshift, yshift, psf=None):
+	def add_galaxy(self, galaxy, xi_hat, eta_hat, intensity, scale, xshift, yshift):
 		"""
 		Add a projected 3d galaxy into the image.
 
@@ -287,11 +307,33 @@ class astronomical_image(object):
 		ys = (numpy.arange(ny) - yshift) * scale # kpc
 		if self.synthetic is None:
 			self.synthetic = 0.
-		self.synthetic += galaxy.render_2d_image(xi_hat, eta_hat, xs, ys)
+		self.synthetic += galaxy.render_2d_image(xi_hat, eta_hat, xs, ys, intensity=intensity, psf=self.psf.rescale(scale))
 
-	def ln_likelihood(self):
+	def create_synthetic_image(self, galaxy, alpha, beta, gamma, intensity, scale, xshift, yshift, bg):
 		"""
-		Compare synthetic and data images.
+		Add a projected 3d galaxy into the image.
+
+		- `scale`: kpc per pixel
+		- `xshift`: location of x=0, y=0 within the image in pixel coords
+
 		"""
-		assert not self.noise_added
-		return -0.5 * numpy.sum(self.ivar * (self.data - self.synthetic) ** 2)
+		r = rotation_3d()
+		r_mat = r.return_rotation_matrix(alpha, beta, gamma)
+		xi_hat = r_mat[0]
+		eta_hat = r_mat[1]
+
+		self.synthetic = None # hack
+		self.add_galaxy(galaxy, xi_hat, eta_hat, intensity, scale, xshift, yshift)
+		self.add_background_level(bg)
+
+	def chi_squared(self, pars, galaxy):
+		"""
+		Create a synthetic image and compare.
+		Unpacking of parameters is very brittle!
+		"""
+		alpha, beta, gamma, intensity, scale, xshift, yshift, bg = pars
+		self.create_synthetic_image(galaxy, alpha, beta, gamma, intensity, scale, xshift, yshift, bg)
+		return numpy.sum(self.ivar * (self.data - self.synthetic) ** 2)
+
+	def __call__(self, pars, galaxy):
+		return self.chi_squared(pars, galaxy)
