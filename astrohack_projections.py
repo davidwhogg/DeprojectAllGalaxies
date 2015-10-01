@@ -309,10 +309,7 @@ class image_and_model(object):
 		if numpy.isscalar(self.synthetic):
 			if self.synthetic != 0.0:
 				self.synthetic = 0
-
-			success = self.construct_synthetic() ## this is for the chi square to be infinity if the render doesnt work
-			if not success:
-				return 0
+			self.construct_synthetic()
 		return self.synthetic
 
 	def get_shape(self):
@@ -350,26 +347,15 @@ class image_and_model(object):
 		eta_hat = r_mat[1]
 
 		self._add_to_synthetic(self.parameters['bg'])
-		try:
-			self._add_to_synthetic(self.galaxy.render_2d_image(xi_hat, eta_hat, xs, ys,
-				                   intensity=self.parameters['intensity'],
-				                   psf=self.psf.rescale(self.parameters['scale'])))
-		except:
-			return 0
+		self._add_to_synthetic(self.galaxy.render_2d_image(xi_hat, eta_hat, xs, ys,
+				               intensity=self.parameters['intensity'],
+				               psf=self.psf.rescale(self.parameters['scale'])))
 
 	def get_chi_squared(self):
-		synthetic = self.get_synthetic()
-		if numpy.isscalar(synthetic):
-			return numpy.inf
-
-		return numpy.sum(self.ivar * (self.data - synthetic) ** 2)
+		return numpy.sum(self.ivar * (self.data - self.get_synthetic()) ** 2)
 
 	def get_chi_vector(self):
-		synthetic = self.get_synthetic()
-		if numpy.isscalar(synthetic):
-			return numpy.zeros(self.data.shape) + numpy.inf
-
-		return (numpy.sqrt(self.ivar) * (self.data - synthetic)).flatten()
+		return (numpy.sqrt(self.ivar) * (self.data - self.get_synthetic())).flatten()
 
 	def get_ln_likelihood(self):
 		return -0.5 * self.get_chi_squared()
