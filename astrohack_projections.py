@@ -362,6 +362,9 @@ class image_and_model(object):
 
 	def get_ln_likelihood(self):
 		return -0.5 * self.get_chi_squared()
+		
+	def get_ln_prior(self):
+		return 0. # no beliefs
 
 	def __call__(self, parameter_vector):
 		self.set_parameters_from_vector(parameter_vector)
@@ -374,6 +377,7 @@ class album_and_model(object):
 	"""
 	def __init__(self):
 		self.images = []
+		self.galaxy = None
 
 	def add_image(self, image):
 		assert type(image) == image_and_model
@@ -381,3 +385,38 @@ class album_and_model(object):
 
 	def get_all_images(self):
 		return self.images
+	
+	def set_galaxy(self, galaxy):
+		self.galaxy = galaxy
+		for image in self.images:
+			image.set_galaxy(galaxy)
+	
+	def get_chi_squared(self):
+		chisquared = 0.
+		for image in self.images:
+			chisquared += image.get_chisquared()
+		return chisquared
+		
+	def get_ln_likelihood(self):
+		lnlike = 0.
+		for image in self.images:
+			lnlike += image.get_ln_likelihood()
+		return lnlike
+		
+	def get_ln_prior(self):
+		lnp = self.galaxy.get_ln_prior()
+		for image in self.images:
+			lnp += image.get_ln_prior()
+		return 
+	
+	def get_ln_prob(self):
+		lnp = self.get_ln_prior()
+		if np.isfinite(lnp):
+			lnp += self.get_ln_likelihood()
+		return lnp
+
+	def __call__(self, galparvec):
+		galaxy = galaxy_3d()
+		galaxy.set_parameters_from_vector(galparvec)
+		self.set_galaxy(galaxy) # must use `set_galaxy()` to propagate to images
+		return self.get_ln_prob()
