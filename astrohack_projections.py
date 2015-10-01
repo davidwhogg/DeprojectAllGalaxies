@@ -190,6 +190,32 @@ class galaxy_model_3d(mixture_of_gaussians):
 		densities_flatten = mixture_2d.render(positions_flatten)
 		densities = numpy.reshape(densities_flatten, X.shape)
 		return densities
+	
+	def set_parameters_from_vector(self, vector):
+		assert len(vector) % 10 == 0
+		self.galaxy = galaxy_model_3d()
+
+		for i in xrange(0, len(vector), 10):
+			parameters = vector[i:i+10]
+			alpha = parameters[0]
+			mu = parameters[1:4]
+			fi = numpy.zeros((3,3))
+			numpy.fill_diagonal(parameters[4:7])
+			fi[numpy.triu_indices(3, 1)] += parameters[7:10]
+			fi[numpy.tril_indices(3, -1)] += parameters[7:10]
+			self.galaxy.add_gaussian(alpha, mu, fi)
+	
+	def get_ln_prior(self):
+		"""
+		Penalize bad (or impossible) condition numbers.
+		"""
+		lnp = 0.
+		for fi in self.fis:
+			eigs = numpy.lingalg.eigvalsh(fi)
+			if numpy.any(eigs <= 0.):
+				return -np.Inf
+			lnp -= numpy.log(numpy.max(eigs) / numpy.min(eigs)) # condition number!
+		return lnp
 
 
 def choose_random_projection():
@@ -275,21 +301,6 @@ class image_and_model(object):
 		assert type(galaxy) == galaxy_model_3d
 		self.galaxy = galaxy
 		self.synthetic = 0.
-
-	def set_galaxy_parameters_vector(self, vector):
-		assert len(vector) % 10 == 0
-		self.synthetic = 0.
-		self.galaxy = galaxy_model_3d()
-
-		for i in xrange(0, len(vector), 10):
-			parameters = vector[i:i+10]
-			alpha = parameters[0]
-			mu = parameters[1:4]
-			fi = numpy.zeros((3,3))
-			numpy.fill_diagonal(parameters[4:7])
-			fi[numpy.triu_indices(3, 1)] += parameters[7:10]
-			fi[numpy.tril_indices(3, -1)] += parameters[7:10]
-			self.galaxy.add_gaussian(alpha, mu, fi)
 
 	def get_data(self):
 		return self.data
@@ -409,14 +420,17 @@ class album_and_model(object):
 			lnp += image.get_ln_prior()
 		return 
 	
-	def get_ln_prob(self):
+	def get_ln_posterior(self):
 		lnp = self.get_ln_prior()
 		if np.isfinite(lnp):
 			lnp += self.get_ln_likelihood()
 		return lnp
 
 	def __call__(self, galparvec):
+		"""
+		Return -2 * ln_prob, which is something we can *minimize*.
+		"""
 		galaxy = galaxy_3d()
 		galaxy.set_parameters_from_vector(galparvec)
 		self.set_galaxy(galaxy) # must use `set_galaxy()` to propagate to images
-		return self.get_ln_prob()
+		return -2. * self.get_ln_posterior()
