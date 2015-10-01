@@ -303,10 +303,6 @@ class image_and_model(object):
 			if not success:
 				return 0
 		return self.synthetic
-			
-
-		
-		return self.synthetic
 
 	def get_shape(self):
 		return self.shape
