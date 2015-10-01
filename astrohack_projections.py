@@ -4,7 +4,6 @@ Copyright 2015 Dalya Baron and David W. Hogg.
 """
 
 import numpy
-import numpy as np
 import scipy.stats
 from scipy.stats import multivariate_normal
 from scipy.linalg import orth
@@ -190,30 +189,36 @@ class galaxy_model_3d(mixture_of_gaussians):
 		densities_flatten = mixture_2d.render(positions_flatten)
 		densities = numpy.reshape(densities_flatten, X.shape)
 		return densities
+
+	def reset(self):
+		pass
 	
 	def set_parameters_from_vector(self, vector):
 		assert len(vector) % 10 == 0
-		self.galaxy = galaxy_model_3d()
-
+		self.__init__()
 		for i in xrange(0, len(vector), 10):
 			parameters = vector[i:i+10]
 			alpha = parameters[0]
 			mu = parameters[1:4]
 			fi = numpy.zeros((3,3))
-			numpy.fill_diagonal(parameters[4:7])
+			fi[numpy.diag_indices(3)] = parameters[4:7]
 			fi[numpy.triu_indices(3, 1)] += parameters[7:10]
 			fi[numpy.tril_indices(3, -1)] += parameters[7:10]
-			self.galaxy.add_gaussian(alpha, mu, fi)
-	
+			self.add_gaussian(alpha, mu, fi)
+
 	def get_ln_prior(self):
 		"""
 		Penalize bad (or impossible) condition numbers.
 		"""
 		lnp = 0.
 		for fi in self.fis:
-			eigs = numpy.lingalg.eigvalsh(fi)
+			try:
+				eigs = numpy.linalg.eigvalsh(fi)
+			except:
+				print "eigs did not converge"
+				return -numpy.Inf
 			if numpy.any(eigs <= 0.):
-				return -np.Inf
+				return -numpy.Inf
 			lnp -= numpy.log(numpy.max(eigs) / numpy.min(eigs)) # condition number!
 		return lnp
 
@@ -376,6 +381,9 @@ class album_and_model(object):
 		self.images = []
 		self.galaxy = None
 
+	def __len__(self):
+		return len(self.images)
+
 	def add_image(self, image):
 		assert type(image) == image_and_model
 		self.images.append(image)
@@ -404,11 +412,11 @@ class album_and_model(object):
 		lnp = self.galaxy.get_ln_prior()
 		for image in self.images:
 			lnp += image.get_ln_prior()
-		return 
+		return lnp
 	
 	def get_ln_posterior(self):
 		lnp = self.get_ln_prior()
-		if np.isfinite(lnp):
+		if numpy.isfinite(lnp):
 			lnp += self.get_ln_likelihood()
 		return lnp
 
@@ -416,7 +424,7 @@ class album_and_model(object):
 		"""
 		Return -2 * ln_prob, which is something we can *minimize*.
 		"""
-		galaxy = galaxy_3d()
+		galaxy = galaxy_model_3d()
 		galaxy.set_parameters_from_vector(galparvec)
 		self.set_galaxy(galaxy) # must use `set_galaxy()` to propagate to images
 		return -2. * self.get_ln_posterior()
