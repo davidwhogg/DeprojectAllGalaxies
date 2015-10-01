@@ -276,6 +276,23 @@ class image_and_model(object):
 		self.galaxy = galaxy
 		self.synthetic = 0.
 
+	def set_galaxy_parameters_vector(self, vector):
+		assert len(vector) % 10 == 0
+		self.synthetic = 0.
+		self.galaxy = galaxy_model_3d()
+
+		for i in xrange(0, len(vector), 10):
+			parameters = vector[i:i+10]
+			alpha = parameters[0]
+			mu = parameters[1:4]
+			fi = numpy.zeros((3,3))
+			numpy.fill_diagonal(parameters[4:7])
+			fi[numpy.triu_indices(3, 1)] += parameters[7:10]
+			fi[numpy.tril_indices(3, -1)] += parameters[7:10]
+			self.galaxy.add_gaussian(alpha, mu, fi)
+
+
+
 	def get_data(self):
 		return self.data
 
