@@ -9,6 +9,8 @@ from scipy.stats import multivariate_normal
 from scipy.linalg import orth
 import matplotlib.pyplot as plt
 from math import pi ,sin, cos
+import h5py
+from scipy.ndimage.filters import gaussian_filter
 
 class rotation_3d(object):
 	"""
@@ -445,3 +447,88 @@ class album_and_model(object):
 		galaxy.set_parameters_from_vector(galparvec)
 		self.set_galaxy(galaxy) # must use `set_galaxy()` to propagate to images
 		return -2. * self.get_ln_posterior()
+
+
+class illustris_model_and_image(object):
+
+	def __init__(self, file_path):
+		assert h5py.is_hdf5(file_path)
+
+		self.file_path = file_path
+
+		f = h5py.File(file_path, "r")
+		stars_snap = f['PartType4']
+		stars_coords = stars_snap['Coordinates']
+		stars_mags = stars_snap['GFM_StellarPhotometrics']
+
+		self.stars_coords = (stars_coords - numpy.mean(stars_coords, axis=0)) / numpy.std(stars_coords, axis=0)
+		self.stars_mags = {'U': stars_mags[:,0],
+						   'B': stars_mags[:,1],
+						   'V': stars_mags[:,2],
+						   'K': stars_mags[:,3],
+						   'g': stars_mags[:,4],
+						   'r': stars_mags[:,5],
+						   'i': stars_mags[:,6],
+						   'z': stars_mags[:,7]}
+		self.image = 0.
+		self.image_parameters = {'alpha' : None,
+						   		 'beta' : None,
+						   		 'gamma' : None,
+						   		 'intensity' : None,
+						   		 'scale' : None,
+						   		 'xshift' : None,
+						   		 'yshift' : None,
+						   		 'bg' : None,
+						   		 'psf_size': None}
+
+	def set_image_shape(self, shape):
+		assert len(shape) == 2
+		self.shape = shape
+
+	def set_image_parameters(self, **kwargs):
+		if kwargs is not None:
+			for key, value in kwargs.iteritems():
+				assert key in self.image_parameters.keys()
+				self.image_parameters[key] = value
+			self.image = 0.
+
+	def get_image(self):
+		return self.image
+
+
+	def _add_to_image(self, contribution):
+		self.image += contribution
+
+	def render_2d_image(self, xi_hat, eta_hat, xs, ys, band_mag='g'):
+		projection_matrix = numpy.vstack((xi_hat, eta_hat))
+		stars_coords_2d = numpy.dot(self.stars_coords, projection_matrix.T)
+		H, xedges, yedges = numpy.histogram2d(stars_coords_2d[:,0], 
+											  stars_coords_2d[:,1], 
+											  [xs, ys], 
+											  normed=True, 
+											  weights= 10 ** (self.stars_mags[band_mag]/-2.5))
+
+		return H
+
+	def construct_image(self):
+
+		nx, ny = self.shape
+		xs = (numpy.arange(nx + 1) - self.image_parameters['xshift']) * self.image_parameters['scale'] # kpc
+		ys = (numpy.arange(ny + 1) - self.image_parameters['yshift']) * self.image_parameters['scale'] # kpc
+
+		r = rotation_3d()
+		r_mat = r.return_rotation_matrix(self.image_parameters['alpha'], self.image_parameters['beta'], self.image_parameters['gamma'])
+		xi_hat = r_mat[0]
+		eta_hat = r_mat[1]
+
+		H = self.render_2d_image(xi_hat, eta_hat, xs, ys)
+		if self.image_parameters['psf_size'] != None:
+			H = gaussian_filter(H, self.image_parameters['psf_size'])
+
+		if self.image_parameters['bg'] != None:
+			self._add_to_image(self.image_parameters['bg'])
+
+		self._add_to_image(H * self.image_parameters['intensity'])
+	
+
+
