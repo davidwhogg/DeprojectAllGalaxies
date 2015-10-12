@@ -1,7 +1,3 @@
-"""
-This file is part of the DeprojectAllGalaxies project.
-Copyright 2015 Dalya Baron and David W. Hogg.
-"""
 
 import numpy
 import scipy.stats
@@ -529,6 +525,3 @@ class illustris_model_and_image(object):
 			self._add_to_image(self.image_parameters['bg'])
 
 		self._add_to_image(H * self.image_parameters['intensity'])
-	
-
-
