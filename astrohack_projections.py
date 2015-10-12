@@ -492,6 +492,9 @@ class illustris_model_and_image(object):
 	def get_image(self):
 		return self.image
 
+	def get_shape(self):
+		return self.shape
+
 
 	def _add_to_image(self, contribution):
 		self.image += contribution
