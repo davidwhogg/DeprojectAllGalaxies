@@ -348,16 +348,17 @@ class image_and_model(object):
 	def _add_to_synthetic(self, contribution):
 		self.synthetic += contribution
 
-	def construct_synthetic(self):
+	def construct_synthetic(self, xi_hat=None, eta_hat=None):
 
 		nx, ny = self.shape
 		xs = (numpy.arange(nx) - self.parameters['xshift']) * self.parameters['scale'] # kpc
 		ys = (numpy.arange(ny) - self.parameters['yshift']) * self.parameters['scale'] # kpc
 
-		r = rotation_3d()
-		r_mat = r.return_rotation_matrix(self.parameters['alpha'], self.parameters['beta'], self.parameters['gamma'])
-		xi_hat = r_mat[0]
-		eta_hat = r_mat[1]
+		if xi_hat == None and eta_hat == None:
+			r = rotation_3d()
+			r_mat = r.return_rotation_matrix(self.parameters['alpha'], self.parameters['beta'], self.parameters['gamma'])
+			xi_hat = r_mat[0]
+			eta_hat = r_mat[1]
 
 		self._add_to_synthetic(self.parameters['bg'])
 		self._add_to_synthetic(self.galaxy.render_2d_image(xi_hat, eta_hat, xs, ys,
@@ -506,16 +507,17 @@ class illustris_model_and_image(object):
 
 		return H
 
-	def construct_image(self):
+	def construct_image(self, xi_hat=None, eta_hat=None):
 
 		nx, ny = self.shape
 		xs = (numpy.arange(nx + 1) - self.image_parameters['xshift']) * self.image_parameters['scale'] # kpc
 		ys = (numpy.arange(ny + 1) - self.image_parameters['yshift']) * self.image_parameters['scale'] # kpc
 
-		r = rotation_3d()
-		r_mat = r.return_rotation_matrix(self.image_parameters['alpha'], self.image_parameters['beta'], self.image_parameters['gamma'])
-		xi_hat = r_mat[0]
-		eta_hat = r_mat[1]
+		if xi_hat == None and eta_hat == None:
+			r = rotation_3d()
+			r_mat = r.return_rotation_matrix(self.image_parameters['alpha'], self.image_parameters['beta'], self.image_parameters['gamma'])
+			xi_hat = r_mat[0]
+			eta_hat = r_mat[1]
 
 		H = self.render_2d_image(xi_hat, eta_hat, xs, ys)
 		if self.image_parameters['psf_size'] != None:
