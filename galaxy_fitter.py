@@ -8,19 +8,20 @@ def construct_illustris_images(num_of_images):
     """
     function returns N images of the same galaxy at different projections
     """
-    file_path = "/Users/dalyabaron/Downloads/cutout_242959.hdf5"
+    #file_path = "/Users/dalyabaron/Downloads/cutout_242959.hdf5"
+    file_path = "/Users/dalyabaron/Copy/Astrophysics/python/new_scripts/new_scripts/DeprojectAllGalaxies/illustris_galaxies/cutout_83.hdf5"
     illustris_gal = astrohack_projections.illustris_model_and_image(file_path)
-    illustris_gal.set_image_shape((60, 80))
+    illustris_gal.set_image_shape((30, 40))
 
     images = []
     for i in xrange(num_of_images):
         xi_hat, eta_hat = astrohack_projections.choose_random_projection()
         alpha, beta, gamma = numpy.random.uniform(0.0, 360.0, 3)
-        intensity = 20
-        scale = 0.015 * numpy.exp(numpy.random.uniform())
-        xshift = numpy.random.uniform(29., 31.)
-        yshift = numpy.random.uniform(39., 41.)
-        psf_size = 1.5
+        intensity = 150 #20
+        scale = 0.18 * numpy.exp(numpy.random.uniform()) #0.015 * numpy.exp(numpy.random.uniform())
+        xshift = numpy.random.uniform(13., 16.)#(29., 31.)
+        yshift = numpy.random.uniform(18., 21.)#(39., 41.)
+        psf_size = 1 #1.5
         bg = 0.
         
         kwargs = {'alpha':alpha, 'beta':beta, 'gamma':gamma, 'intensity':intensity, 'scale':scale, 'xshift': xshift, 'yshift': yshift, 'bg':0.0, 'psf_size':psf_size}
@@ -57,14 +58,14 @@ def construct_initial_album(illustris_images, psf_blur_size):
         # projection parameters
         xi_hat, eta_hat = astrohack_projections.choose_random_projection()
         alpha, beta, gamma = numpy.random.uniform(0.0, 360.0, 3)
-        intensity = 20
-        scale = 0.5 * numpy.exp(numpy.random.uniform())
-        xshift = numpy.random.uniform(29.5, 31.)
-        yshift = numpy.random.uniform(39.5, 41.)
+        intensity = 150 #20
+        scale = 0.18 * numpy.exp(numpy.random.uniform()) #0.5 * numpy.exp(numpy.random.uniform())
+        xshift = numpy.random.uniform(13., 16.)#(29.5, 31.)
+        yshift = numpy.random.uniform(18., 21.)#(39.5, 41.)
         bg = 0.
         
         image = astrohack_projections.image_and_model()
-        image.set_shape((60, 80))
+        image.set_shape((30, 40))
         image.set_psf(psf)
         scale = 0.5
         kwargs = {'alpha':alpha, 'beta':beta, 'gamma':gamma, 'intensity':intensity, 'scale':scale, 'xshift': xshift, 'yshift': yshift, 'bg':0.0}
@@ -92,7 +93,7 @@ def construct_secondary_album(illustris_images, in_album, psf_blur_size=None):
     gal_model = in_album.galaxy
     basevar = 0.5 * numpy.eye(3)
     for i in xrange(2):
-        v = numpy.random.uniform(0, 1, size=3)
+        v = numpy.random.uniform(0, 3, size=3)
         mu = numpy.random.uniform(4, 6, size=3) * numpy.random.choice((-1, 1), size=3)
         gal_model.add_gaussian(1.0, mu, basevar + numpy.outer(v, v))
 
@@ -160,7 +161,7 @@ def fit_illustris_galaxy_main(log_file, fit_figures_dir):
     count_run = 0
     chi_reached = False
 
-    while (count_run <= 1) and (not chi_reached): # stoping if did 5 runs or if I reached a sufficient chi square difference
+    while (count_run <= 10) and (not chi_reached): # stoping if did 5 runs or if I reached a sufficient chi square difference
         count_run += 1
         galpar0 = album.get_all_images()[0].galaxy.get_parameters_vector()
         print count_run, len(galpar0)
@@ -196,17 +197,14 @@ def fit_illustris_galaxy_main(log_file, fit_figures_dir):
 
     count_run = 0
     chi_reached = False
-    galpar_bounds_0 = ((0, None), (None, None), (None, None), (None, None), (None, None),
-                       (None, None), (None, None), (None, None), (None, None), (None, None)) * 3
-    galpar_bounds =  galpar_bounds_0 + ((0, None), (None, None), (None, None), (None, None),
-                     (0, 2), (0, 2), (0, 2), (0, 2), (0, 2), (0, 2)) * 2
-    while (count_run <= 4) and (not chi_reached): # stoping if did 5 runs or if I reached a sufficient chi square difference
+
+    while (count_run <= 10) and (not chi_reached): # stoping if did 5 runs or if I reached a sufficient chi square difference
         count_run += 1
         galpar0 = album_new.get_all_images()[0].galaxy.get_parameters_vector()
         print count_run, len(galpar0)
         log.write("Phase II, run %s, album before %s\n" % (count_run, album_new(galpar0)))
         log.flush()
-        result = op.minimize(album_new, galpar0, bounds=galpar_bounds) #method="Powell", )
+        result = op.minimize(album_new, galpar0, method="Powell")
         galpar = result['x']
         log.write("Phase II, run %s, album after %s\n" % (count_run, album_new(galpar)))
         log.flush()
@@ -237,20 +235,14 @@ def fit_illustris_galaxy_main(log_file, fit_figures_dir):
 
     count_run = 0
     chi_reached = False
-    galpar_bounds_0 = ((0, None), (None, None), (None, None), (None, None), (None, None),
-                       (None, None), (None, None), (None, None), (None, None), (None, None)) * 3
-    galpar_bounds_1 =  galpar_bounds_0 + ((0, None), (None, None), (None, None), (None, None),
-                     (0, 2), (0, 2), (0, 2), (0, 2), (0, 2), (0, 2)) * 2
 
-    galpar_bounds = galpar_bounds_1 + ((0, None), (None, None), (None, None), (None, None),
-                     (0, 1), (0, 1), (0, 1), (0, 1), (0, 1), (0, 1)) * 2
-    while (count_run <= 4) and (not chi_reached): # stoping if did 5 runs or if I reached a sufficient chi square difference
+    while (count_run <= 10) and (not chi_reached): # stoping if did 5 runs or if I reached a sufficient chi square difference
         count_run += 1
         galpar0 = album_new.get_all_images()[0].galaxy.get_parameters_vector()
         print count_run, len(galpar0)
         log.write("Phase III, run %s, album before %s\n" % (count_run, album_new(galpar0)))
         log.flush()
-        result = op.minimize(album_new, galpar0, bounds=galpar_bounds) #method="Powell")
+        result = op.minimize(album_new, galpar0, method="Powell")
         galpar = result['x']
         log.write("Phase III, run %s, album after %s\n" % (count_run, album_new(galpar)))
         log.flush()
