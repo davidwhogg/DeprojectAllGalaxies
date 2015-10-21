@@ -1,0 +1,37 @@
+started
+Gauss num:1, iter num:0, likelihood:141846687.205
+Gauss num:1, iter num:1, after album likelihood:61541130.6302
+Gauss num:1, iter num:2, after image likelihood:17968825.5427
+Gauss num:1, iter num:3, after album likelihood:12493526.3726
+Gauss num:1, iter num:4, after image likelihood:10573949.2605
+Gauss num:1, iter num:5, after album likelihood:10492362.974
+Gauss num:1, iter num:6, after image likelihood:10446689.3524
+Gauss num:1, iter num:7, after album likelihood:10414931.6766
+Gauss num:1, iter num:8, after image likelihood:10399543.365
+Gauss num:1, iter num:9, after album likelihood:10389644.3499
+Gauss num:1, iter num:10, after image likelihood:10383574.2375
+Gauss num:1, iter num:11, after album likelihood:10379010.1757
+Gauss num:1, iter num:12, after image likelihood:10376135.2734
+Gauss num:2, iter num:1, after album likelihood:4785434.80431
+Gauss num:2, iter num:2, after image likelihood:3630754.61486
+Gauss num:2, iter num:3, after album likelihood:2928304.32518
+Gauss num:2, iter num:4, after image likelihood:2825264.88815
+Gauss num:2, iter num:5, after album likelihood:2784934.9438
+Gauss num:2, iter num:6, after image likelihood:2762312.89938
+Gauss num:2, iter num:7, after album likelihood:2746267.42249
+Gauss num:2, iter num:8, after image likelihood:2735083.95486
+Gauss num:2, iter num:9, after album likelihood:2725894.69014
+Gauss num:2, iter num:10, after image likelihood:2719206.20954
+Gauss num:2, iter num:11, after album likelihood:2713168.66446
+Gauss num:2, iter num:12, after image likelihood:2708593.31185
+Gauss num:2, iter num:13, after album likelihood:2704783.08765
+Gauss num:2, iter num:14, after image likelihood:2701881.93844
+Gauss num:2, iter num:15, after album likelihood:2699487.47782
+Gauss num:2, iter num:16, after image likelihood:2696154.08121
+Gauss num:2, iter num:17, after album likelihood:2694492.24101
+Gauss num:2, iter num:18, after image likelihood:2693299.5083
+Gauss num:2, iter num:19, after album likelihood:2692063.36903
+Gauss num:2, iter num:20, after image likelihood:2691064.7764
+Gauss num:3, iter num:1, after album likelihood:3671981.61174
+Gauss num:3, iter num:2, after image likelihood:2697254.90066
+done

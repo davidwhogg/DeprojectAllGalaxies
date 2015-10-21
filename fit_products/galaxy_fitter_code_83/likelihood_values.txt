@@ -1,0 +1,27 @@
+started
+Gauss num:3, iter num:0, likelihood:2699503.86807
+Gauss num:3, iter num:1, after album likelihood:770906.284431
+Gauss num:3, iter num:2, after image likelihood:95990.6384941
+Gauss num:3, iter num:3, after album likelihood:90152.8696568
+Gauss num:3, iter num:4, after image likelihood:87945.0974427
+Gauss num:3, iter num:5, after album likelihood:87149.0156881
+Gauss num:3, iter num:6, after image likelihood:86655.6422601
+Gauss num:3, iter num:7, after album likelihood:86474.0697529
+Gauss num:3, iter num:8, after image likelihood:84357.4489825
+Gauss num:3, iter num:9, after album likelihood:84222.496698
+Gauss num:3, iter num:10, after image likelihood:84110.2748514
+Gauss num:5, iter num:1, after album likelihood:81432.7620411
+Gauss num:5, iter num:2, after image likelihood:80330.8221542
+Gauss num:5, iter num:3, after album likelihood:79739.5306081
+Gauss num:5, iter num:4, after image likelihood:79386.6536954
+Gauss num:5, iter num:5, after album likelihood:79101.1886528
+Gauss num:5, iter num:6, after image likelihood:78879.0954466
+Gauss num:7, iter num:1, after album likelihood:78751.3048326
+Gauss num:7, iter num:2, after image likelihood:77576.2749989
+Gauss num:7, iter num:3, after album likelihood:74644.4558188
+Gauss num:7, iter num:4, after image likelihood:73737.3227722
+Gauss num:7, iter num:5, after album likelihood:73431.3275199
+Gauss num:7, iter num:6, after image likelihood:73266.5418349
+Gauss num:9, iter num:1, after album likelihood:75471.2747834
+Gauss num:9, iter num:2, after image likelihood:73941.6023091
+done

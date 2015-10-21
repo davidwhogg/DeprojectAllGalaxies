@@ -1,0 +1,33 @@
+started
+Gauss num:1, iter num:0, likelihood:1486810.41502
+Gauss num:1, iter num:1, after album likelihood:615496.962888
+Gauss num:1, iter num:2, after image likelihood:75776.7396577
+Gauss num:1, iter num:3, after album likelihood:71279.9674991
+Gauss num:1, iter num:4, after image likelihood:70077.3803797
+Gauss num:1, iter num:5, after album likelihood:69642.075134
+Gauss num:1, iter num:6, after image likelihood:69436.2357901
+Gauss num:1, iter num:7, after album likelihood:69324.7084599
+Gauss num:1, iter num:8, after image likelihood:69265.890666
+Gauss num:1, iter num:9, after album likelihood:69227.1114709
+Gauss num:1, iter num:10, after image likelihood:69204.777007
+Gauss num:2, iter num:1, after album likelihood:67138.9561927
+Gauss num:2, iter num:2, after image likelihood:65777.2218362
+Gauss num:2, iter num:3, after album likelihood:61474.699467
+Gauss num:2, iter num:4, after image likelihood:60114.813961
+Gauss num:2, iter num:5, after album likelihood:59579.1456304
+Gauss num:2, iter num:6, after image likelihood:59284.0997865
+Gauss num:2, iter num:7, after album likelihood:59128.8695061
+Gauss num:2, iter num:8, after image likelihood:58832.0329134
+Gauss num:2, iter num:9, after album likelihood:58754.7156732
+Gauss num:2, iter num:10, after image likelihood:58529.2018101
+Gauss num:2, iter num:11, after album likelihood:58394.044774
+Gauss num:2, iter num:12, after image likelihood:58270.8791124
+Gauss num:2, iter num:13, after album likelihood:58189.0473806
+Gauss num:2, iter num:14, after image likelihood:58135.5483777
+Gauss num:2, iter num:15, after album likelihood:58096.885421
+Gauss num:2, iter num:16, after image likelihood:58064.184612
+Gauss num:2, iter num:17, after album likelihood:58037.3884633
+Gauss num:2, iter num:18, after image likelihood:58012.5763945
+Gauss num:3, iter num:1, after album likelihood:67928.776184
+Gauss num:3, iter num:2, after image likelihood:67139.9231759
+done

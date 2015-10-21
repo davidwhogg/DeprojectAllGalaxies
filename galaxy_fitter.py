@@ -4,24 +4,25 @@ import matplotlib.pyplot as plt
 from scipy.ndimage.filters import gaussian_filter
 import scipy.optimize as op
 
-def construct_illustris_images(num_of_images):
+def construct_illustris_images(num_of_images, illustris_gal_path):
     """
     function returns N images of the same galaxy at different projections
     """
     #file_path = "/Users/dalyabaron/Downloads/cutout_242959.hdf5"
-    file_path = "/Users/dalyabaron/Copy/Astrophysics/python/new_scripts/new_scripts/DeprojectAllGalaxies/illustris_galaxies/cutout_83.hdf5"
+    #file_path = "/Users/dalyabaron/Copy/Astrophysics/python/new_scripts/new_scripts/DeprojectAllGalaxies/illustris_galaxies/cutout_83.hdf5"
+    file_path = illustris_gal_path
     illustris_gal = astrohack_projections.illustris_model_and_image(file_path)
-    illustris_gal.set_image_shape((30, 40))
+    illustris_gal.set_image_shape((60, 80))
 
     images = []
     for i in xrange(num_of_images):
         xi_hat, eta_hat = astrohack_projections.choose_random_projection()
         alpha, beta, gamma = numpy.random.uniform(0.0, 360.0, 3)
-        intensity = 150 #20
-        scale = 0.18 * numpy.exp(numpy.random.uniform()) #0.015 * numpy.exp(numpy.random.uniform())
-        xshift = numpy.random.uniform(13., 16.)#(29., 31.)
-        yshift = numpy.random.uniform(18., 21.)#(39., 41.)
-        psf_size = 1 #1.5
+        intensity = 20 #150 
+        scale = 0.015 * numpy.exp(numpy.random.uniform()) #0.18 * numpy.exp(numpy.random.uniform()) 
+        xshift = numpy.random.uniform(29., 31.)#(13., 16.)
+        yshift = numpy.random.uniform(39., 41.)#(18., 21.)
+        psf_size = 1.5 #1 
         bg = 0.
         
         kwargs = {'alpha':alpha, 'beta':beta, 'gamma':gamma, 'intensity':intensity, 'scale':scale, 'xshift': xshift, 'yshift': yshift, 'bg':0.0, 'psf_size':psf_size}
@@ -30,7 +31,7 @@ def construct_illustris_images(num_of_images):
         images.append(illustris_gal.get_image())
     return images
 
-def construct_initial_album(illustris_images, psf_blur_size):
+def construct_initial_album(illustris_images, psf_blur_size=None):
     """
     the initial album contains 32 images of the illustris galaxy,
     the images will be a little blured so that 3 Gaussians will be sufficient for the fitting process.
@@ -53,21 +54,24 @@ def construct_initial_album(illustris_images, psf_blur_size):
 
     # add all images to the album
     for i in xrange(num_of_images):
-        data = gaussian_filter(illustris_images[i], psf_blur_size)
+        if psf_blur_size != None:
+            data = gaussian_filter(illustris_images[i], psf_blur_size)
+        else:
+            data = illustris_images[i]
 
         # projection parameters
         xi_hat, eta_hat = astrohack_projections.choose_random_projection()
         alpha, beta, gamma = numpy.random.uniform(0.0, 360.0, 3)
-        intensity = 150 #20
-        scale = 0.18 * numpy.exp(numpy.random.uniform()) #0.5 * numpy.exp(numpy.random.uniform())
-        xshift = numpy.random.uniform(13., 16.)#(29.5, 31.)
-        yshift = numpy.random.uniform(18., 21.)#(39.5, 41.)
+        intensity = 20 #150 #
+        scale = 0.5 * numpy.exp(numpy.random.uniform()) #0.18 * numpy.exp(numpy.random.uniform()) #
+        xshift = numpy.random.uniform(29.5, 31.)#(13., 16.)#
+        yshift = numpy.random.uniform(39.5, 41.)#(18., 21.)#
         bg = 0.
         
         image = astrohack_projections.image_and_model()
-        image.set_shape((30, 40))
+        image.set_shape((60, 80))
         image.set_psf(psf)
-        scale = 0.5
+        scale = 0.3 #0.5
         kwargs = {'alpha':alpha, 'beta':beta, 'gamma':gamma, 'intensity':intensity, 'scale':scale, 'xshift': xshift, 'yshift': yshift, 'bg':0.0}
         image.set_parameters(**kwargs)
         image.set_galaxy(gal_model)
@@ -93,8 +97,8 @@ def construct_secondary_album(illustris_images, in_album, psf_blur_size=None):
     gal_model = in_album.galaxy
     basevar = 0.5 * numpy.eye(3)
     for i in xrange(2):
-        v = numpy.random.uniform(0, 3, size=3)
-        mu = numpy.random.uniform(4, 6, size=3) * numpy.random.choice((-1, 1), size=3)
+        v = numpy.random.uniform(0, 10, size=3)
+        mu = numpy.random.uniform(6, 10, size=3) * numpy.random.choice((-1, 1), size=3)
         gal_model.add_gaussian(1.0, mu, basevar + numpy.outer(v, v))
 
     # add all images to the album
@@ -142,7 +146,7 @@ def plot_album(album, outfile=None):
         plt.close()
 
 
-def fit_illustris_galaxy_main(log_file, fit_figures_dir):
+def fit_illustris_galaxy_main(log_file, fit_figures_dir, illustris_gal_path):
     """
     function fits to illustris galaxy and saves all relevant data to file
     """
@@ -152,11 +156,11 @@ def fit_illustris_galaxy_main(log_file, fit_figures_dir):
 
     num_of_images = 32
     psf_blur_size = 2
-    illustris_images = construct_illustris_images(num_of_images)
+    illustris_images = construct_illustris_images(num_of_images, illustris_gal_path)
 
     # phase I
-    album = construct_initial_album(illustris_images, psf_blur_size)
-    plot_album(album, "%s/phase1_initialisation.pdf" % fit_figures_dir)
+    album = construct_initial_album(illustris_images)
+    plot_album(album, "%s/phase1_00_initialisation.pdf" % fit_figures_dir)
 
     count_run = 0
     chi_reached = False
@@ -193,7 +197,7 @@ def fit_illustris_galaxy_main(log_file, fit_figures_dir):
         imgpar = image.get_parameters_vector()
         log.write("Phase II, initialisation, image score: %s\n" % image(imgpar))
         log.flush()
-    plot_album(album_new, "%s/phase2_initialisation.pdf" % fit_figures_dir)
+    plot_album(album_new, "%s/phase2_00_initialisation.pdf" % fit_figures_dir)
 
     count_run = 0
     chi_reached = False
@@ -231,7 +235,7 @@ def fit_illustris_galaxy_main(log_file, fit_figures_dir):
         imgpar = image.get_parameters_vector()
         log.write("Phase III, initialisation, image score: %s\n" % image(imgpar))
         log.flush()
-    plot_album(album_new, "%s/phase3_initialisation.pdf" % fit_figures_dir)
+    plot_album(album_new, "%s/phase3_00_initialisation.pdf" % fit_figures_dir)
 
     count_run = 0
     chi_reached = False

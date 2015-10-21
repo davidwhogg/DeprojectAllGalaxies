@@ -56,3 +56,48 @@ def return_likelihood_per_iter(path):
 	return iter_num, album_before, album_after
 
 
+def return_likelihood_per_iter_and_gaus_num(path):
+	"""
+	function returns the likelihood before and after the minimisation as a function of iteration and gaussian number
+	"""
+	f = file(path, "r")
+	lines = f.read().splitlines()
+
+	iter_num = []
+	gaus_num = []
+	album_before = []
+	album_after = []
+
+	iter_val = 0
+	for line in lines:
+		if ("Phase I," in line) and ("album before" in line):
+			iter_val += 1
+			album_before.append(float(line.split(" ")[-1]))
+			gaus_num.append(3)
+			iter_num.append(iter_val)
+		elif ("Phase I," in line) and ("album after" in line):
+			album_after.append(float(line.split(" ")[-1]))
+		elif ("Phase II," in line) and ("album before" in line):
+			iter_val += 1
+			album_before.append(float(line.split(" ")[-1]))
+			gaus_num.append(5)
+			iter_num.append(iter_val)
+		elif ("Phase II," in line) and ("album after" in line):
+			album_after.append(float(line.split(" ")[-1]))
+		elif ("Phase III," in line) and ("album before" in line):
+			iter_val += 1
+			album_before.append(float(line.split(" ")[-1]))
+			gaus_num.append(7)
+			iter_num.append(iter_val)
+		elif ("Phase III," in line) and ("album after" in line):
+			album_after.append(float(line.split(" ")[-1]))
+
+	iter_num = numpy.array(iter_num)
+	gaus_num = numpy.array(gaus_num)
+	album_before = numpy.array(album_before)
+	album_after = numpy.array(album_after)
+
+	return iter_num, gaus_num, album_before, album_after
+
+
+
