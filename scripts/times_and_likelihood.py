@@ -100,3 +100,4 @@ def return_likelihood_per_iter_and_gaus_num(path):
 	return iter_num, gaus_num, album_before, album_after
 
 
+
