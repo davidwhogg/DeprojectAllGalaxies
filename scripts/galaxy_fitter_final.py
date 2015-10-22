@@ -379,9 +379,9 @@ def main_galaxy_242959():
     gfitter.set_image_parameters(**image_parameters)
     gfitter.set_initial_gauss_num(3)
     gfitter.set_iter_gauss_num(2)
-    gfitter.set_in_iter_limit(0.1)
+    gfitter.set_in_iter_limit(1)
     gfitter.set_out_iter_limit(0.1) #0.1
-    gfitter.set_output_directory("/Users/dalyabaron/Copy/Astrophysics/python/new_scripts/new_scripts/DeprojectAllGalaxies/fitting_pngs/galaxy_fitter_code_242959")
+    gfitter.set_output_directory("/Users/dalyabaron/Copy/Astrophysics/python/new_scripts/new_scripts/DeprojectAllGalaxies/fit_products/galaxy_fitter_code_242959_2")
 
     gfitter.fit_galaxy()
 
