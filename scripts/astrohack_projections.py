@@ -187,6 +187,15 @@ class galaxy_model_3d(mixture_of_gaussians):
 		densities_flatten = mixture_2d.render(positions_flatten)
 		densities = numpy.reshape(densities_flatten, X.shape)
 		return densities
+
+	def _construct_covariance_from_vector(self, vector):
+		assert len(vector)==6
+		assert numpy.isreal(vector).all()
+		fi = numpy.zeros((3,3))
+		fi[numpy.diag_indices(3)] = vector[:3]
+		fi[numpy.tril_indices(3, -1)] += vector[3:]
+		covariance = numpy.dot(fi, fi.T)
+		return covariance
 	
 	def set_parameters_from_vector(self, vector):
 		assert len(vector) % 10 == 0
@@ -195,10 +204,12 @@ class galaxy_model_3d(mixture_of_gaussians):
 			parameters = vector[i:i+10]
 			alpha = parameters[0]
 			mu = parameters[1:4]
-			fi = numpy.zeros((3,3))
-			fi[numpy.diag_indices(3)] = parameters[4:7]
-			fi[numpy.triu_indices(3, 1)] += parameters[7:10]
-			fi[numpy.tril_indices(3, -1)] += parameters[7:10]
+			fi = self._construct_covariance_from_vector(parameters[4:])
+			## old covariance construction ##
+			#fi = numpy.zeros((3,3))
+			#fi[numpy.diag_indices(3)] = parameters[4:7]
+			#fi[numpy.triu_indices(3, 1)] += parameters[7:10]
+			#fi[numpy.tril_indices(3, -1)] += parameters[7:10]
 			self.add_gaussian(alpha, mu, fi)
 
 	def get_parameters_vector(self):

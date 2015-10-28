@@ -1,0 +1,2 @@
+started
+Gauss num:1, iter num:0, likelihood:1165445.30554

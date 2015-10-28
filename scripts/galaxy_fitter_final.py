@@ -213,6 +213,45 @@ class galaxy_fitter(object):
         pickle.dump(album, f)
         f.close()
 
+    def _estimate_jacobian(x, func, epsilon,*args):
+        """
+        Approximate the Jacobian matrix of callable function func
+
+       * Parameters
+         x       - The state vector at which the Jacobian matrix is desired
+         func    - A vector-valued function of the form f(x,*args)
+         epsilon - The peturbation used to determine the partial derivatives
+         *args   - Additional arguments passed to func
+
+       * Returns
+         An array of dimensions (lenf, lenx) where lenf is the length
+         of the outputs of func, and lenx is the number of
+
+       * Notes
+         The approximation is done using forward differences
+
+        """
+        x0 = numpy.asfarray(x)
+        f0 = func(x0)
+        jac = numpy.zeros([len(x0),1])
+        dx = numpy.zeros(len(x0))
+        for i in range(len(x0)):
+            dx[i] = epsilon
+            jac[i] = (func(*((x0+dx,)+args)) - f0)/epsilon
+            dx[i] = 0.0
+        return jac.transpose()
+
+    def _estimate_likelihood_and_jacobian(self, galpar0, album):
+        """
+        function estimates the Jacobian given the album and galaxy parameters,
+        this is the function one should run as a minimisation function for the NEWTON-CG method
+        kind of hacky
+        """
+        score = album(galpar0)
+        # now calculate the jacobian
+        jac = self._estimate_jacobian(galpar0, album, 10**-5)
+        return score, jac
+
     def _minimise_parameters_of_given_album(self, album):
         """
         function minimises the parameters of the given album - one for galpar and one for imgpar 
@@ -220,7 +259,7 @@ class galaxy_fitter(object):
         # minimise galaxy parameters
         galpar0 = album.get_all_images()[0].galaxy.get_parameters_vector()
         gaus_num = len(galpar0) / 10
-        result = op.minimize(album, galpar0, method='Powell')
+        op.minimize(album, galpar0, method='BFGS') #result = op.minimize(self._estimate_likelihood_and_jacobian, galpar0, args=(album), method='NEWTON-CG', jac=True) #
         galpar = result['x']
         self.iter_num += 1
         likelihood_in_album = album(galpar)
@@ -231,7 +270,7 @@ class galaxy_fitter(object):
         # minimise image parameters
         for image in album:
             imgpar0 = image.get_parameters_vector()
-            result = op.minimize(image, imgpar0)
+            result = op.minimize(image, imgpar0, method='BFGS')
             imgpar = result['x']
             likelihood_in_image = image(imgpar)
         likelihood_in_images = album(galpar)
@@ -341,7 +380,7 @@ def main_galaxy_83():
     """
     function is the main function for the minimisation code for the 83 galaxy from illustris
     """
-    gal_path = "/Users/dalyabaron/Copy/Astrophysics/python/new_scripts/new_scripts/DeprojectAllGalaxies/illustris_galaxies/cutout_83.hdf5"
+    gal_path = "/Users/dalyabaron/Copy/Astrophysics/python/new_scripts/new_scripts/DeprojectAllGalaxies/illustris_galaxies/3d_data/cutout_83.hdf5"
     gfitter = galaxy_fitter(gal_path)
 
     image_parameters = {'num': 32,
@@ -353,13 +392,15 @@ def main_galaxy_83():
                         'psf_size': 1,
                         'bg': 0}
     gfitter.set_image_parameters(**image_parameters)
-    gfitter.set_initial_gauss_num(1)#3)
-    gfitter.set_iter_gauss_num(1)#2)
+    gfitter.set_initial_gauss_num(1)
+    gfitter.set_iter_gauss_num(1)
     gfitter.set_in_iter_limit(0.1)
-    gfitter.set_out_iter_limit(0.1) #0.1
-    gfitter.set_output_directory("/Users/dalyabaron/Copy/Astrophysics/python/new_scripts/new_scripts/DeprojectAllGalaxies/fitting_pngs/galaxy_fitter_code_83_simp")
+    gfitter.set_out_iter_limit(0.1)
+    gfitter.set_output_directory("/Users/dalyabaron/Copy/Astrophysics/python/new_scripts/new_scripts/DeprojectAllGalaxies/fit_products/tests/profiling_galaxy_fitter_code_83_simp_newton")
 
     gfitter.fit_galaxy()
+
+main_galaxy_83()
 
 def main_galaxy_242959():
     """
@@ -384,4 +425,38 @@ def main_galaxy_242959():
     gfitter.set_output_directory("/Users/dalyabaron/Copy/Astrophysics/python/new_scripts/new_scripts/DeprojectAllGalaxies/fit_products/galaxy_fitter_code_242959_2")
 
     gfitter.fit_galaxy()
+
+
+
+from scipy.stats import multivariate_normal
+# run a loop to make sure that I'm actually able to construct covariance matrix
+def cov_check():
+    count_yes = 0
+    count_no = 0
+    cov_total = numpy.zeros((3,3))
+    vector_total = []
+    for i in xrange(10000):
+        #vector = numpy.random.uniform(-1, 1, size=6)
+        fi = numpy.zeros((3,3))
+        fi[numpy.diag_indices(3)] = numpy.random.uniform(-10, 10, size=3)
+        fi[numpy.tril_indices(3, -1)] += numpy.random.uniform(-10, 10, size=3)
+        cov_mat = numpy.dot(fi, fi.T)
+        try:
+            multivariate_normal([1,1,1], cov=cov_mat)
+            count_yes += 1
+            cov_total += cov_mat
+            vec = []
+            vec.append(cov_total[0][0])
+            vec.append(cov_total[1][1])
+            vec.append(cov_total[2][2])
+            vec.append(cov_total[0][1])
+            vec.append(cov_total[0][2])
+            vec.append(cov_total[1][2])
+            vector_total.append(vec)
+        except:
+            print "nope"
+            print cov_mat
+            count_no += 1
+    print count_yes, count_no
+    return cov_total, numpy.array(vector_total)
 
