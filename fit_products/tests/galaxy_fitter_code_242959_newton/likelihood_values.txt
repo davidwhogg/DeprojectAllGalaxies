@@ -1,0 +1,9 @@
+started
+Gauss num:3, iter num:0, likelihood:91446278.1343
+Gauss num:3, iter num:1, after album likelihood:30985774.4948
+Gauss num:3, iter num:2, after image likelihood:8064012.79728
+Gauss num:3, iter num:3, after album likelihood:16680388.6892
+Gauss num:3, iter num:4, after image likelihood:6739460.59954
+Gauss num:3, iter num:5, after album likelihood:6696832.55119
+Gauss num:3, iter num:6, after image likelihood:6673390.77422
+Gauss num:5, iter num:1, after album likelihood:2117570.19821
